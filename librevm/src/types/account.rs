@@ -1,6 +1,6 @@
 use alloy_primitives::{B256, U256};
 use prost::{DecodeError, Message};
-use revm::primitives::AccountInfo;
+use revm::primitives::{AccountInfo, KECCAK_EMPTY};
 
 use crate::{memory::UnmanagedVector, v1::types::Account};
 
@@ -13,7 +13,11 @@ impl TryFrom<UnmanagedVector> for AccountInfo {
         Ok(AccountInfo {
             balance: U256::from_be_slice(&account.balance),
             nonce: account.nonce,
-            code_hash: B256::from_slice(&account.code_hash),
+            code_hash: if account.code_hash.is_empty() {
+                KECCAK_EMPTY
+            } else {
+                B256::from_slice(&account.code_hash)
+            },
             code: None,
         })
     }

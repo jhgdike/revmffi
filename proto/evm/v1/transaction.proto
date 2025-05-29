@@ -23,7 +23,7 @@ message Transaction {
     bytes gas_priority_fee = 8; // 32 bytes
     repeated AccessListItem access_list = 9;
     repeated bytes blob_hashes = 10; // List of blob versioned hashes
-    bytes max_fee_per_blob_gas = 11; // 32 bytes
+    optional bytes max_fee_per_blob_gas = 11; // 32 bytes
     optional AuthorizationList authorization_list = 12; // List of authorizations
 }
 

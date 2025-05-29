@@ -1,16 +1,20 @@
-package vmffi_test
+package core_test
 
 import (
-	"fmt"
+	"github.com/0xEyrie/revmffi/core/state"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/triedb"
+	"github.com/rethmint/revm-api/testutils"
 	"math/big"
 	"testing"
 
+	"github.com/0xEyrie/revmffi/core/contracts/erc20"
+	"github.com/0xEyrie/revmffi/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	revm_api "github.com/rethmint/revm-api"
-	"github.com/rethmint/revm-api/benchmark/contracts/erc20"
-	"github.com/rethmint/revm-api/testutils"
-	types "github.com/rethmint/revm-api/types/go"
+	ethState "github.com/ethereum/go-ethereum/core/state"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,15 +26,19 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	erc20bin, _ := hexutil.Decode(erc20.Erc20Bin)
 	callerAddr := common.HexToAddress(caller)
 	// Create VM
-	evm := revm_api.NewVM(cancun)
+	memdb := rawdb.NewMemoryDatabase()
+	tdb := triedb.NewDatabase(memdb, triedb.HashDefaults)
+	kvstore := ethState.NewDatabase(tdb, nil)
+
+	stateDB, _ := state.New(ethTypes.EmptyRootHash, kvstore)
+	evm := NewEVM(vm.BlockContext{}, stateDB, Config{})
 	defer evm.Destroy()
-	kvstore := testutils.NewMockKVStore()
 	// ERC20 create
 	packedData, _ := erc20abi.Constructor.Inputs.Pack("Mock", "Mock")
 	calldata := append(erc20bin, packedData...)
 	txcontext := testutils.MockTx(callerAddr, common.Address{}, calldata, 0)
 	block := testutils.MockBlock(1)
-	result, err := evm.ExecuteTx(kvstore, block.ToSerialized(), txcontext.ToSerialized())
+	result, err := evm.Execute(block.ToSerialized(), txcontext.ToSerialized())
 	require.NoError(t, err)
 	res, err := result.ProcessExecutionResult()
 	require.NoError(t, err)
@@ -44,9 +52,8 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	require.NoError(t, err)
 	res, err = result.ProcessExecutionResult()
 	require.NoError(t, err)
-	rres, ok := res.(types.Success)
+	_, ok = res.(types.Success)
 	require.True(t, ok)
-	fmt.Println("mint", rres.GasUsed)
 
 	// ERC20 Transfer
 	recipientAddr := common.HexToAddress("0x20")
@@ -56,9 +63,8 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	require.NoError(t, err)
 	res, err = result.ProcessExecutionResult()
 	require.NoError(t, err)
-	rres, ok = res.(types.Success)
+	_, ok = res.(types.Success)
 	require.True(t, ok)
-	fmt.Println("transfer", rres.GasUsed)
 
 	// ERC20 BalanceOf
 	balanceOfData, _ := erc20abi.Pack("balanceOf", recipientAddr)
@@ -70,8 +76,5 @@ func Test_ERC20_Benchmark(t *testing.T) {
 	require.True(t, ok)
 	balance := new(big.Int).SetBytes(queryRes.Output.Output).Uint64()
 	require.Equal(t, uint64(100), balance)
-	rres, ok = res.(types.Success)
-	require.True(t, ok)
-	fmt.Println("balanceOf", rres.GasUsed)
 
 }

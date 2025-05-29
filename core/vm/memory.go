@@ -73,7 +73,7 @@ func copyAndDestroyUnmanagedVector(v C.UnmanagedVector) []byte {
 		// C.GoBytes create a copy (https://stackoverflow.com/a/40950744/2013738)
 		out = C.GoBytes(unsafe.Pointer(v.ptr), cint(v.len))
 	}
-	C.destroy_unmanaged_vector(v)
+	//C.destroy_unmanaged_vector(v)
 	return out
 }
 

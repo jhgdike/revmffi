@@ -50,6 +50,11 @@ func New(root common.Hash, db state.Database) (*ExtendedStateDB, error) {
 func (state *ExtendedStateDB) Basic(addr []byte) []byte {
 	address := common.BytesToAddress(addr)
 	obj := state.GetStateObject(address)
+	//fmt.Println(address, obj)
+	if obj == nil {
+		return make([]byte, 0)
+		//obj :=
+	}
 	account, err := proto.Marshal(&revmtypes.Account{
 		Balance:  obj.Balance().Bytes(),
 		Nonce:    obj.Nonce(),

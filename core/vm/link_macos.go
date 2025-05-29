@@ -2,5 +2,5 @@
 
 package vm
 
-// #cgo LDFLAGS: -Wl,-rpath,${SRCDIR} -L${SRCDIR} -lrevmapi
+// #cgo LDFLAGS: -Wl,-rpath,${SRCDIR}/../revm -L${SRCDIR}/../revm -lrevmapi -framework CoreFoundation -framework Security
 import "C"

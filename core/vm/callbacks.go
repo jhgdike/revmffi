@@ -54,7 +54,7 @@ type GasMeter interface {
 var db_vtable = C.Db_vtable{
 	commit:           (C.commit_fn)(C.cCommit_cgo),
 	get_account:      (C.get_account_fn)(C.cGetAccount_cgo),
-	get_code_by_hash: (C.get_code_by_hash_fn)(C.cGetAccount_cgo),
+	get_code_by_hash: (C.get_code_by_hash_fn)(C.cGetCodeByHash_cgo),
 	get_storage:      (C.get_storage_fn)(C.cGetStorage_cgo),
 	get_block_hash:   (C.get_block_hash_fn)(C.cGetBlockHash_cgo),
 }
@@ -103,8 +103,8 @@ func cCommit(ptr *C.db_t, storages C.U8SliceView, accounts C.U8SliceView, delete
 	return C.GoError_None
 }
 
-//export cBasic
-func cBasic(ptr *C.db_t, address C.U8SliceView, account *C.UnmanagedVector, errOut *C.UnmanagedVector) (ret C.GoError) {
+//export cGetAccount
+func cGetAccount(ptr *C.db_t, address C.U8SliceView, account *C.UnmanagedVector, errOut *C.UnmanagedVector) (ret C.GoError) {
 	defer recoverPanic(&ret)
 
 	if ptr == nil || account == nil || errOut == nil {

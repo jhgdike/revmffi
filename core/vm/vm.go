@@ -5,6 +5,7 @@ package vm
 import "C"
 
 import (
+	"fmt"
 	"runtime"
 	"syscall"
 
@@ -62,6 +63,7 @@ func (evm *EVM) Execute(
 	if err != nil && err.(syscall.Errno) != C.Success {
 		// ignore the opereation times out error
 		errno, ok := err.(syscall.Errno)
+		fmt.Println("err: ", errno, errmsg)
 		if ok && errno == syscall.ETIMEDOUT || errno == syscall.ENOENT {
 			return unmarshalEvmResult(res)
 		}

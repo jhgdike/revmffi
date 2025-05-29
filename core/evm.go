@@ -14,7 +14,7 @@ import (
 )
 
 type Config struct {
-	spec revm.SpecId
+	Spec revm.SpecId
 
 	NoBaseFee         bool
 	hasCompiler       bool
@@ -35,9 +35,9 @@ type EVM struct {
 func NewEVM(blockCtx vm.BlockContext, statedb state.ExtendedStateDB, config Config) EVM {
 	var inner revm.EVM
 	if config.hasCompiler {
-		inner = revm.NewEVMWithCompiler(statedb, config.thershold, config.maxConcurrentSize, config.spec)
+		inner = revm.NewEVMWithCompiler(statedb, config.thershold, config.maxConcurrentSize, config.Spec)
 	} else {
-		inner = revm.NewEVM(statedb, config.spec)
+		inner = revm.NewEVM(statedb, config.Spec)
 	}
 
 	return EVM{
@@ -48,7 +48,7 @@ func NewEVM(blockCtx vm.BlockContext, statedb state.ExtendedStateDB, config Conf
 }
 
 func (evm *EVM) GetSpecId() revm.SpecId {
-	return evm.Config.spec
+	return evm.Config.Spec
 }
 
 func (evm *EVM) SetTxContext(txCtx vm.TxContext) {
@@ -67,24 +67,35 @@ func (evm *EVM) SetBlockNumber(number uint64) {
 	evm.Inner.StateDB.SetBlockNumber(number)
 }
 
+// safeBigBytes returns the bytes of a big.Int, or zero if nil
+func safeBigBytes(b *big.Int) []byte {
+	if b == nil {
+		return big.NewInt(0).Bytes()
+	}
+	return b.Bytes()
+}
+
 // Call execute transaction based on revm
 // this function only support entry call of transactions
 func (evm *EVM) Execute(
 	caller vm.ContractRef, msg *core.Message,
 ) (*revmtypes.EvmResult, error) {
 	// save block context on evm
-	excessBlobGas := evm.Context.BlobBaseFee.Uint64()
+	//var excessBlobGas uint64
+	//if evm.Context.BlobBaseFee != nil {
+	//	excessBlobGas = evm.Context.BlobBaseFee.Uint64()
+	//}
 	number := evm.Context.BlockNumber
 	evm.SetBlockNumber(number.Uint64())
 	block := &revmtypes.Block{
-		Number:        number.Bytes(),
-		Coinbase:      evm.Context.Coinbase.Bytes(),
-		Timestamp:     big.NewInt(int64(evm.Context.Time)).Bytes(),
-		GasLimit:      big.NewInt(int64(evm.Context.GasLimit)).Bytes(),
-		Basefee:       evm.Context.BaseFee.Bytes(),
-		Difficulty:    evm.Context.Difficulty.Bytes(),
-		Prevrandao:    evm.Context.Random[:],
-		ExcessBlobGas: &excessBlobGas,
+		Number:     safeBigBytes(number),
+		Coinbase:   evm.Context.Coinbase.Bytes(),
+		Timestamp:  safeBigBytes(big.NewInt(int64(evm.Context.Time))),
+		GasLimit:   safeBigBytes(big.NewInt(int64(evm.Context.GasLimit))),
+		Basefee:    safeBigBytes(evm.Context.BaseFee),
+		Difficulty: safeBigBytes(evm.Context.Difficulty),
+		Prevrandao: evm.Context.Random[:],
+		//ExcessBlobGas: &excessBlobGas,
 	}
 
 	blockBuf, err := proto.Marshal(block)
@@ -94,12 +105,12 @@ func (evm *EVM) Execute(
 	transaction := revmtypes.Transaction{
 		Caller:         caller.Address().Bytes(),
 		GasLimit:       msg.GasLimit,
-		GasPrice:       msg.GasPrice.Bytes(),
+		GasPrice:       safeBigBytes(msg.GasPrice),
 		Nonce:          nil,
-		TransactTo:     msg.To.Bytes(),
-		Value:          msg.Value.Bytes(),
+		TransactTo:     make([]byte, 20),
+		Value:          make([]byte, 0),
 		Data:           msg.Data,
-		GasPriorityFee: msg.GasTipCap.Bytes(),
+		GasPriorityFee: safeBigBytes(msg.GasTipCap),
 		AccessList: func(accl types.AccessList) []*revmtypes.AccessListItem {
 			result := make([]*revmtypes.AccessListItem, len(accl))
 			for i, acc := range accl {
@@ -121,8 +132,17 @@ func (evm *EVM) Execute(
 			}
 			return result
 		}(msg.BlobHashes),
-		MaxFeePerBlobGas:  msg.BlobGasFeeCap.Bytes(),
+		MaxFeePerBlobGas:  nil,
 		AuthorizationList: nil,
+	}
+	if msg.BlobGasFeeCap != nil {
+		transaction.MaxFeePerBlobGas = safeBigBytes(msg.BlobGasFeeCap)
+	}
+	if msg.To != nil {
+		transaction.TransactTo = msg.To.Bytes()
+	}
+	if msg.Value != nil {
+		transaction.Value = msg.Value.Bytes()
 	}
 
 	txBuf, err := proto.Marshal(&transaction)

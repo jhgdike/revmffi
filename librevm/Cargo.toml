@@ -20,6 +20,7 @@ backtraces = []
 [dependencies]
 errno.workspace = true
 bytes.workspace = true
+derive_more = { version = "1.0.0", features = ["full"] }
 serde = { workspace = true, features = ["derive", "alloc"] }
 serde_json.workspace = true
 thiserror.workspace = true
@@ -39,6 +40,7 @@ chrono = "0.4.38"
 chrono-tz = "0.10.0"
 prost.workspace = true
 prost-types.workspace = true
+backtrace = "0.3"
 
 
 [build-dependencies]

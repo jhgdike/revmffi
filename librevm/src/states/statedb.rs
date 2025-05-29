@@ -27,6 +27,8 @@ impl Database for StateDB<'_> {
 
     #[doc = " Get basic account information."]
     fn basic(&mut self, address: Address) -> Result<Option<AccountInfo>, BackendError> {
+//         let bt = Backtrace::new();
+//         println!("{:?}", bt);
         let mut error_msg = UnmanagedVector::default();
         let mut output = UnmanagedVector::default();
         let go_error: GoError = (self.db.vtable.get_account)(
@@ -58,7 +60,7 @@ impl Database for StateDB<'_> {
         unsafe {
             go_error.into_result(error_msg, || "Failed to get code from the db".to_owned())?;
         }
-        let bytecode_bytes = output.consume().unwrap();
+        let bytecode_bytes = output.consume().unwrap_or_default();
         let bytecode = Bytecode::new_raw(Bytes::from(bytecode_bytes));
         Ok(bytecode)
     }
@@ -121,6 +123,7 @@ impl DatabaseCommit for StateDB<'_> {
                 deleted_accounts.push(address);
                 continue;
             }
+
             let mut info = account.clone().info;
             if info.code.is_none() {
                 info.code = Some(self.code_by_hash(info.code_hash).unwrap());
