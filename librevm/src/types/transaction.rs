@@ -63,7 +63,10 @@ impl From<TransactionProto> for TxEnv {
                 .iter()
                 .map(|hash| B256::from_slice(hash))
                 .collect(),
-            max_fee_per_blob_gas: None,
+            max_fee_per_blob_gas: transaction
+                .max_fee_per_blob_gas
+                .as_ref()
+                .map(|bytes| U256::from_be_slice(bytes)),
             authorization_list: if let Some(list) = transaction.authorization_list {
                 match list.authorization_list {
                     Some(al) => match al {

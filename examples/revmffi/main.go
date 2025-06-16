@@ -96,7 +96,13 @@ func main() {
 	}
 	//fmt.Println(result.String())
 	fmt.Println("mint: ", result.GetResult())
-	fmt.Println(stateDB.GetStateObject(callerAddr))
+	fmt.Println("mint logs: ", result.GetSuccess().Output.GetCall().String())
+	fmt.Println(stateDB.GetStateObject(erc20Addr))
+	fmt.Println("get code", stateDB.GetCode(erc20Addr))
+	fmt.Println("get caller", stateDB.GetStateObject(callerAddr))
+
+	fmt.Println(stateDB.GetStateObject(erc20Addr).GetState(common.HexToHash(erc20Addr.Hex())))
+	fmt.Println(stateDB.GetStateObject(erc20Addr).GetState(common.HexToHash(recipientAddr.Hex())))
 
 	// ERC20 Transfer
 
@@ -120,8 +126,8 @@ func main() {
 	}
 	//fmt.Println(result.String())
 	fmt.Println("transfer: ", result.GetResult())
-	fmt.Println(stateDB.GetStateObject(callerAddr))
-	fmt.Println(stateDB.GetStateObject(recipientAddr))
+	fmt.Println(stateDB.GetStateObject(erc20Addr).GetState(common.HexToHash(erc20Addr.Hex())))
+	fmt.Println(stateDB.GetStateObject(erc20Addr).GetState(common.HexToHash(recipientAddr.Hex())))
 
 	// ERC20 BalanceOf
 	balanceOfData, _ := erc20abi.Pack("balanceOf", recipientAddr)
@@ -145,6 +151,6 @@ func main() {
 	fmt.Println("balanceOf: ", result.GetResult())
 	fmt.Println(result.GetSuccess().Output.String())
 	//fmt.Println(stateDB.GetStorage(callerAddr))
-	fmt.Println(stateDB.GetStateObject(recipientAddr))
+	fmt.Println(stateDB.GetStateObject(erc20Addr).GetState(common.HexToHash(recipientAddr.Hex())))
 
 }
